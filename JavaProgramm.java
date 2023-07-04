@@ -114,9 +114,7 @@ public class JavaProgramm {
     }
 
     private static void checkSitemap(String sitemapUrlString) {
-    String formattedUrl = sitemapUrlString.replaceFirst("/$", "");
-    formattedUrl = formattedUrl.replace("//", "/");
-    System.out.println(ANSI_CYAN + "Die Sitemap-Datei existiert: " + formattedUrl + ANSI_RESET);
-}
-
+        String formattedUrl = sitemapUrlString.trim();
+        System.out.println(ANSI_CYAN + "Die Sitemap-Datei existiert: " + formattedUrl + ANSI_RESET);
+    }
 }
