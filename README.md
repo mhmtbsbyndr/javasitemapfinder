@@ -10,7 +10,7 @@ and then call the Java File with Domain name via Terminal:
 
 <code>java JavaProgramm delalo.de</code>
 
-![Example] (https://github.com/mhmtbsbyndr/javasitemapfinder/blob/main/javasitemapfinder.png)
+![Example] (https://raw.githubusercontent.com/mhmtbsbyndr/javasitemapfinder/main/javasitemapfinder.png)
 
 
 
