@@ -50,7 +50,7 @@ public class JavaProgramm {
             }
         } catch (URISyntaxException | IOException e) {
             System.out.println(ANSI_RED + "Ein Fehler ist aufgetreten: " + e.getMessage() + ANSI_RESET);
-            e.printStackTrace();
+            saveDomainToNotFoundFile(domain);
         }
     }
 
@@ -123,64 +123,64 @@ public class JavaProgramm {
             }
         } catch (URISyntaxException | IOException e) {
             System.out.println(ANSI_RED + "Ein Fehler ist aufgetreten: " + e.getMessage() + ANSI_RESET);
-            e.printStackTrace();
+            saveDomainToNotFoundFile(domain);
         }
     }
 
     private static void checkSitemap(String sitemapUrlString, String domain) {
-    String formattedUrl = sitemapUrlString.trim();
-    System.out.println(ANSI_CYAN + "Die Sitemap-Datei existiert: " + formattedUrl + ANSI_RESET);
+        String formattedUrl = sitemapUrlString.trim();
+        System.out.println(ANSI_CYAN + "Die Sitemap-Datei existiert: " + formattedUrl + ANSI_RESET);
 
-    try {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document document = builder.parse(URI.create(sitemapUrlString).toURL().openStream());
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(URI.create(sitemapUrlString).toURL().openStream());
 
-        NodeList sitemapNodes = document.getElementsByTagName("sitemap");
-        if (sitemapNodes.getLength() > 0) {
-            System.out.println("Es handelt sich um eine Index-Sitemap.");
+            NodeList sitemapNodes = document.getElementsByTagName("sitemap");
+            if (sitemapNodes.getLength() > 0) {
+                System.out.println("Es handelt sich um eine Index-Sitemap.");
 
-            for (int i = 0; i < sitemapNodes.getLength(); i++) {
-                Node sitemapNode = sitemapNodes.item(i);
-                NodeList locNodes = sitemapNode.getChildNodes();
-                for (int j = 0; j < locNodes.getLength(); j++) {
-                    Node locNode = locNodes.item(j);
-                    if (locNode.getNodeName().equals("loc")) {
-                        String sitemapXmlUrl = locNode.getTextContent().trim();
-                        System.out.println("XML-Sitemap: " + sitemapXmlUrl);
-                        boolean downloaded = downloadSitemap(URI.create(sitemapXmlUrl), domain);
-                        if (!downloaded) {
-                            // Sitemap konnte nicht heruntergeladen werden, Domain in Datei speichern
-                            saveDomainToNotFoundFile(domain);
+                for (int i = 0; i < sitemapNodes.getLength(); i++) {
+                    Node sitemapNode = sitemapNodes.item(i);
+                    NodeList locNodes = sitemapNode.getChildNodes();
+                    for (int j = 0; j < locNodes.getLength(); j++) {
+                        Node locNode = locNodes.item(j);
+                        if (locNode.getNodeName().equals("loc")) {
+                            String sitemapXmlUrl = locNode.getTextContent().trim();
+                            System.out.println("XML-Sitemap: " + sitemapXmlUrl);
+                            boolean downloaded = downloadSitemap(URI.create(sitemapXmlUrl), domain);
+                            if (!downloaded) {
+                                // Sitemap konnte nicht heruntergeladen werden, Domain in Datei speichern
+                                saveDomainToNotFoundFile(domain);
+                            }
                         }
                     }
                 }
+            } else {
+                System.out.println("Es handelt sich um eine normale Sitemap.");
+                boolean downloaded = downloadSitemap(URI.create(sitemapUrlString), domain);
+                if (!downloaded) {
+                    // Sitemap konnte nicht heruntergeladen werden, Domain in Datei speichern
+                    saveDomainToNotFoundFile(domain);
+                }
             }
-        } else {
-            System.out.println("Es handelt sich um eine normale Sitemap.");
-            boolean downloaded = downloadSitemap(URI.create(sitemapUrlString), domain);
-            if (!downloaded) {
-                // Sitemap konnte nicht heruntergeladen werden, Domain in Datei speichern
-                saveDomainToNotFoundFile(domain);
+        } catch (ParserConfigurationException | SAXException e) {
+            System.out.println(ANSI_RED + "Ein Fehler ist aufgetreten: " + e.getMessage() + ANSI_RESET);
+            // Domain in Datei speichern
+            saveDomainToNotFoundFile(domain);
+        } catch (IOException e) {
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("Server returned HTTP response code:")) {
+                int statusCodeIndex = errorMessage.indexOf(":") + 2;
+                String statusCode = errorMessage.substring(statusCodeIndex, statusCodeIndex + 3);
+                System.out.println(ANSI_RED + "Server Returned Error mit Code " + statusCode + ANSI_RESET);
+            } else {
+                System.out.println(ANSI_RED + "Ein Fehler ist aufgetreten: " + errorMessage + ANSI_RESET);
             }
+            // Domain in Datei speichern
+            saveDomainToNotFoundFile(domain);
         }
-    } catch (ParserConfigurationException | SAXException e) {
-        System.out.println(ANSI_RED + "Ein Fehler ist aufgetreten: " + e.getMessage() + ANSI_RESET);
-        // Domain in Datei speichern
-        saveDomainToNotFoundFile(domain);
-    } catch (IOException e) {
-        String errorMessage = e.getMessage();
-        if (errorMessage.contains("Server returned HTTP response code:")) {
-            int statusCodeIndex = errorMessage.indexOf(":") + 2;
-            String statusCode = errorMessage.substring(statusCodeIndex, statusCodeIndex + 3);
-            System.out.println(ANSI_RED + "Server Returned Error mit Code " + statusCode + ANSI_RESET);
-        } else {
-            System.out.println(ANSI_RED + "Ein Fehler ist aufgetreten: " + errorMessage + ANSI_RESET);
-        }
-        // Domain in Datei speichern
-        saveDomainToNotFoundFile(domain);
     }
-}
 
 
     private static boolean downloadSitemap(URI sitemapUri, String domain) {
