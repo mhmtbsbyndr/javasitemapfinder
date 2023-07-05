@@ -75,46 +75,78 @@ public class JavaProgramm {
     }
 
     private static void checkRobotsTxt(String url) {
-        try {
-            URI uri = new URI(url);
-            URL robotsUrl = uri.resolve("/robots.txt").toURL();
-            HttpURLConnection connection = (HttpURLConnection) robotsUrl.openConnection();
-            int responseCode = connection.getResponseCode();
+    try {
+        URI uri = new URI(url);
+        URL robotsUrl = uri.resolve("/robots.txt").toURL();
+        HttpURLConnection connection = (HttpURLConnection) robotsUrl.openConnection();
+        int responseCode = connection.getResponseCode();
 
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                System.out.println(ANSI_BLUE + "Die robots.txt-Datei existiert." + ANSI_BLUE);
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            System.out.println(ANSI_BLUE + "Die robots.txt-Datei existiert." + ANSI_BLUE);
 
-                // Ausgabe der Zeile mit Sitemap
-                InputStream inputStream = connection.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                String line;
-                String sitemapUrl = null;
-                while ((line = reader.readLine()) != null) {
-                    if (line.toLowerCase().startsWith("sitemap:")) {
-                        sitemapUrl = line.substring(8).trim();
-                        System.out.println(line);
-                        break;
+            // Ausgabe der Zeilen mit Sitemap
+            InputStream inputStream = connection.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            List<String> sitemapUrls = new ArrayList<>();
+            boolean sitemapFound = false;
+            while ((line = reader.readLine()) != null) {
+                if (line.toLowerCase().startsWith("sitemap:")) {
+                    String sitemapUrl = line.substring(8).trim();
+                    sitemapUrls.add(sitemapUrl);
+                    System.out.println(line);
+                    sitemapFound = true;
+                }
+            }
+            reader.close();
+
+            if (!sitemapFound) {
+                System.out.println(ANSI_RED + "Keine Sitemaps in der robots.txt-Datei gefunden." + ANSI_RESET);
+                sitemapUrls.add(url + "/sitemap.xml");
+            }
+
+            for (String sitemapUrl : sitemapUrls) {
+                checkSitemap(sitemapUrl);
+            }
+        } else {
+            System.out.println(ANSI_YELLOW + "Die robots.txt-Datei existiert nicht." + ANSI_RESET);
+            checkSitemap(url + "sitemap.xml");
+        }
+    } catch (URISyntaxException | IOException e) {
+        e.printStackTrace();
+    }
+}
+
+	private static void checkSitemap(String sitemapUrlString) {
+    String formattedUrl = sitemapUrlString.trim();
+    System.out.println(ANSI_CYAN + "Die Sitemap-Datei existiert: " + formattedUrl + ANSI_RESET);
+
+    try {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document document = builder.parse(URI.create(sitemapUrlString).toURL().openStream());
+
+        NodeList sitemapNodes = document.getElementsByTagName("sitemap");
+        if (sitemapNodes.getLength() > 0) {
+            System.out.println("Es handelt sich um eine Index-Sitemap.");
+
+            for (int i = 0; i < sitemapNodes.getLength(); i++) {
+                Node sitemapNode = sitemapNodes.item(i);
+                NodeList locNodes = sitemapNode.getChildNodes();
+                for (int j = 0; j < locNodes.getLength(); j++) {
+                    Node locNode = locNodes.item(j);
+                    if (locNode.getNodeName().equals("loc")) {
+                        String sitemapXmlUrl = locNode.getTextContent().trim();
+                        System.out.println("XML-Sitemap: " + sitemapXmlUrl);
                     }
                 }
-                reader.close();
-
-                if (sitemapUrl != null) {
-                    checkSitemap(sitemapUrl);
-                } else {
-                    System.out.println(ANSI_RED + "Keine Sitemap in der robots.txt-Datei gefunden." + ANSI_RESET);
-                    checkSitemap(url + "/sitemap.xml");
-                }
-            } else {
-                System.out.println(ANSI_YELLOW + "Die robots.txt-Datei existiert nicht." + ANSI_RESET);
-                checkSitemap(url + "sitemap.xml");
             }
-        } catch (URISyntaxException | IOException e) {
-            e.printStackTrace();
+        } else {
+            System.out.println("Es handelt sich um eine normale Sitemap.");
         }
+    } catch (ParserConfigurationException | SAXException | IOException e) {
+        e.printStackTrace();
     }
+}
 
-    private static void checkSitemap(String sitemapUrlString) {
-        String formattedUrl = sitemapUrlString.trim();
-        System.out.println(ANSI_CYAN + "Die Sitemap-Datei existiert: " + formattedUrl + ANSI_RESET);
-    }
 }
