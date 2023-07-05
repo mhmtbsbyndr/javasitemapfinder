@@ -102,16 +102,18 @@ public class JavaProgramm {
                 while ((line = reader.readLine()) != null) {
                     if (line.toLowerCase().startsWith("sitemap:")) {
                         String sitemapUrl = line.substring(8).trim();
-                        sitemapUrls.add(sitemapUrl);
-                        System.out.println(line);
-                        sitemapFound = true;
+                        // Überprüfen, ob die Sitemap-URL zur gleichen Domain gehört
+                        if (isSameDomain(url, sitemapUrl)) {
+                            sitemapUrls.add(sitemapUrl);
+                            System.out.println(line);
+                            sitemapFound = true;
+                        }
                     }
                 }
                 reader.close();
 
                 if (!sitemapFound) {
                     System.out.println(ANSI_RED + "Keine Sitemaps in der robots.txt-Datei gefunden." + ANSI_RESET);
-                    sitemapUrls.add(combinePaths(url, "/sitemap.xml"));
                 }
 
                 for (String sitemapUrl : sitemapUrls) {
@@ -119,11 +121,28 @@ public class JavaProgramm {
                 }
             } else {
                 System.out.println(ANSI_YELLOW + "Die robots.txt-Datei existiert nicht." + ANSI_RESET);
-                checkSitemap(combinePaths(url, "/sitemap.xml"), domain);
             }
+
+            // Wenn keine Sitemaps in der robots.txt gefunden wurden oder die Sitemaps zu einer anderen Domain gehören
+            // wird die Standard-Sitemap "/sitemap.xml" verwendet
+            checkSitemap(combinePaths(url, "/sitemap.xml"), domain);
+
         } catch (URISyntaxException | IOException e) {
             System.out.println(ANSI_RED + "Ein Fehler ist aufgetreten: " + e.getMessage() + ANSI_RESET);
             saveDomainToNotFoundFile(domain);
+        }
+    }
+
+    private static boolean isSameDomain(String baseUrl, String sitemapUrl) {
+        try {
+            URI baseUri = new URI(baseUrl);
+            URI sitemapUri = new URI(sitemapUrl);
+
+            // Vergleichen Sie die Hostnamen beider URLs, um festzustellen, ob sie zur gleichen Domain gehören
+            return baseUri.getHost().equalsIgnoreCase(sitemapUri.getHost());
+        } catch (URISyntaxException e) {
+            // Fehler bei der Überprüfung der URLs, daher wird angenommen, dass sie unterschiedliche Domains sind
+            return false;
         }
     }
 
